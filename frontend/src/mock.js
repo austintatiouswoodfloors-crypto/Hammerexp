@@ -1,7 +1,16 @@
 // Mock data for Nailing Master (single level, tap-count scoring).
 // NOTE: Best (fewest taps) is MOCKED on the frontend via localStorage.
 
-export const MAX_DEPTH = 6; // hit-depth needed to drive a nail flush
+export const MAX_DEPTH = 100; // depth needed to drive a nail flush (many taps)
+
+// Depth gained per strike (with slight randomness so totals vary):
+//  perfect ~19 taps/nail  -> best run ~70-80 total (4 nails)
+//  good    ~35 taps/nail  -> sloppy run ~120-180 total
+export const HIT_DEPTH = {
+  perfect: () => 4.8 + Math.random() * 1.0,
+  great: () => 3.4 + Math.random() * 0.9,
+  good: () => 2.3 + Math.random() * 0.9,
+};
 
 // Single stage config.
 export const GAME = { nails: 4, perfectR: 30, goodR: 62 };

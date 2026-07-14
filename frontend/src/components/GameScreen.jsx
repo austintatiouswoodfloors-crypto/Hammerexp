@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import NailBoard from './NailBoard';
-import { MAX_DEPTH } from '../mock';
+import { MAX_DEPTH, HIT_DEPTH } from '../mock';
 import { SFX } from '../audio';
 import { Home, Hammer } from 'lucide-react';
 
@@ -83,10 +83,9 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
     if (finishedRef.current) return;
     finishedRef.current = true;
     const total = tapsRef.current;
-    const perfectTaps = game.nails * 2; // minimum possible
     let stars = 1;
-    if (total <= perfectTaps) stars = 3;
-    else if (total <= game.nails * 3) stars = 2;
+    if (total <= game.nails * 21) stars = 3;       // ~84 or fewer (near-perfect)
+    else if (total <= game.nails * 30) stars = 2;  // ~120 or fewer
     SFX.clear();
     setTimeout(() => onFinish({ taps: total, stars }), 650);
   }, [game, onFinish]);
@@ -104,9 +103,9 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
 
     let tier, addDepth;
     if (best < 0) { tier = 'miss'; addDepth = 0; }
-    else if (bd <= game.perfectR) { tier = 'perfect'; addDepth = 3; }
-    else if (bd <= game.perfectR * 1.9) { tier = 'great'; addDepth = 2; }
-    else if (bd <= game.goodR) { tier = 'good'; addDepth = 1; }
+    else if (bd <= game.perfectR) { tier = 'perfect'; addDepth = HIT_DEPTH.perfect(); }
+    else if (bd <= game.perfectR * 1.9) { tier = 'great'; addDepth = HIT_DEPTH.great(); }
+    else if (bd <= game.goodR) { tier = 'good'; addDepth = HIT_DEPTH.good(); }
     else { tier = 'miss'; addDepth = 0; }
 
     if (tier === 'perfect') SFX.hitPerfect();
