@@ -5,6 +5,10 @@ import { SFX } from '../audio';
 import { Pause, Play, Home, Clock, Zap } from 'lucide-react';
 
 const PLANK_H = 92;
+const NAIL_BOTTOM = PLANK_H - 6; // matches NailBoard
+const MAX_EXPOSED = 150;
+
+const exposedFor = (depth) => Math.max(8, MAX_EXPOSED * (1 - depth / MAX_DEPTH));
 
 export default function GameScreen({ t, level, onFinish, onMenu }) {
   const makeNails = useCallback(() =>
@@ -13,7 +17,9 @@ export default function GameScreen({ t, level, onFinish, onMenu }) {
 
   const [nails, setNails] = useState(makeNails);
   const [boardW, setBoardW] = useState(400);
+  const [boardH, setBoardH] = useState(600);
   const [hammerX, setHammerX] = useState(200);
+  const [hammerY, setHammerY] = useState(150);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
@@ -28,29 +34,36 @@ export default function GameScreen({ t, level, onFinish, onMenu }) {
   const pausedRef = useRef(false);
   const finishedRef = useRef(false);
   const swingingRef = useRef(false);
-  const aimingRef = useRef(false);
+  const lastYRef = useRef(150);
+  const cooldownRef = useRef(null);      // nail id currently "pressed" (needs lift)
   const hammerXRef = useRef(200);
+  const nailsRef = useRef(nails);
+  const nailXsRef = useRef([]);
+  const boardHRef = useRef(600);
   const statsRef = useRef({ strikes: 0, perfects: 0, bends: 0 });
 
   useEffect(() => { pausedRef.current = paused; }, [paused]);
   useEffect(() => { hammerXRef.current = hammerX; }, [hammerX]);
+  useEffect(() => { nailsRef.current = nails; }, [nails]);
+  useEffect(() => { boardHRef.current = boardH; }, [boardH]);
 
   // reset per level
   useEffect(() => {
     finishedRef.current = false;
+    cooldownRef.current = null;
     statsRef.current = { strikes: 0, perfects: 0, bends: 0 };
     setNails(makeNails());
     setScore(0); setCombo(0); setMaxCombo(0); setTimeLeft(level.time); setPaused(false);
   }, [level, makeNails]);
 
-  // measure board width
+  // measure board
   useLayoutEffect(() => {
     const el = boardRef.current;
     if (!el) return;
     const update = () => {
-      const w = el.clientWidth;
-      setBoardW(w);
-      setHammerX((prev) => (prev && prev > 0 ? prev : w / 2));
+      setBoardW(el.clientWidth);
+      setBoardH(el.clientHeight);
+      setHammerX((prev) => (prev && prev > 0 ? prev : el.clientWidth / 2));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -62,16 +75,14 @@ export default function GameScreen({ t, level, onFinish, onMenu }) {
   const n = nails.length;
   const gap = Math.min(74, (boardW - 70) / Math.max(n, 1));
   const nailXs = nails.map((_, i) => boardW / 2 + (i - (n - 1) / 2) * gap);
+  useEffect(() => { nailXsRef.current = nailXs; });
 
-  // nearest not-done nail to hammerX -> target highlight
-  const nearest = (x) => {
+  const nearest = (x, list = nailsRef.current, xs = nailXsRef.current) => {
     let best = -1, bd = Infinity;
-    nailXs.forEach((nx, i) => {
-      if (!nails[i].done) { const d = Math.abs(nx - x); if (d < bd) { bd = d; best = i; } }
-    });
+    xs.forEach((nx, i) => { if (list[i] && !list[i].done) { const d = Math.abs(nx - x); if (d < bd) { bd = d; best = i; } } });
     return { best, bd };
   };
-  const { best: targetIndex, bd: targetDist } = nearest(hammerX);
+  const { best: targetIndex, bd: targetDist } = nearest(hammerX, nails, nailXs);
   const highlight = targetDist <= level.goodR ? targetIndex : -1;
 
   // timer
@@ -102,15 +113,14 @@ export default function GameScreen({ t, level, onFinish, onMenu }) {
     });
   }, [level, timeLeft, maxCombo, onFinish]);
 
-  const doStrike = useCallback(() => {
+  // resolve a strike on nail index `best` at horizontal distance `bd`
+  const doStrike = useCallback((best, bd) => {
     if (pausedRef.current || finishedRef.current || swingingRef.current) return;
     swingingRef.current = true;
     setSwinging(true);
-    setTimeout(() => { swingingRef.current = false; setSwinging(false); }, 300);
+    setTimeout(() => { swingingRef.current = false; setSwinging(false); }, 260);
     statsRef.current.strikes += 1;
 
-    const x = hammerXRef.current;
-    const { best, bd } = nearest(x);
     let tier, addDepth, addScore;
     if (best < 0) { tier = 'miss'; addDepth = 0; addScore = 0; }
     else if (bd <= level.perfectR) { tier = 'perfect'; addDepth = 3; addScore = 100; statsRef.current.perfects += 1; }
@@ -130,14 +140,19 @@ export default function GameScreen({ t, level, onFinish, onMenu }) {
     if (tier === 'perfect') SFX.hitPerfect();
     else if (tier === 'great') SFX.hitGood();
     else if (tier === 'good') SFX.hitOk();
-    else { SFX.miss(); setShake(true); setTimeout(() => setShake(false), 320); }
+    else { SFX.miss(); setShake(true); setTimeout(() => setShake(false), 300); }
 
     setHitFx({ index: best, type: tier === 'miss' ? 'miss' : 'hit' });
     setTimeout(() => setHitFx(null), 500);
 
+    // feedback position
+    const list0 = nailsRef.current;
+    const fy = best >= 0 && list0[best]
+      ? boardHRef.current - NAIL_BOTTOM - exposedFor(list0[best].depth) - 30
+      : boardHRef.current / 2;
     const label = { perfect: t.perfect, great: t.great, good: t.good, miss: t.miss }[tier];
     const color = { perfect: '#3fae6a', great: '#f0a92e', good: '#5a86a3', miss: '#e06a5a' }[tier];
-    setFeedback({ text: label, color, key: Date.now(), x, combo: isCombo && newCombo > 1 ? newCombo : null });
+    setFeedback({ text: label, color, key: Date.now(), x: hammerXRef.current, y: fy, combo: isCombo && newCombo > 1 ? newCombo : null });
 
     setNails((prev) => {
       const list = prev.map((c) => ({ ...c }));
@@ -157,38 +172,46 @@ export default function GameScreen({ t, level, onFinish, onMenu }) {
       if (list.every((c) => c.done)) setTimeout(() => finish(true), 250);
       return list;
     });
-  }, [level, combo, t, nailXs, nails, finish]);
+  }, [level, combo, t, finish]);
 
-  // ===== pointer control (finger moves hammer) =====
-  const localX = (clientX) => {
+  // ===== finger control: move hammer in 2D, swing DOWN onto a nail to strike =====
+  const applyPointer = (clientX, clientY) => {
     const rect = boardRef.current.getBoundingClientRect();
-    return Math.max(24, Math.min(rect.width - 24, clientX - rect.left));
+    const x = Math.max(24, Math.min(rect.width - 24, clientX - rect.left));
+    const y = Math.max(12, Math.min(rect.height - 20, clientY - rect.top));
+    const dy = y - lastYRef.current;
+    lastYRef.current = y;
+    setHammerX(x); setHammerY(y); hammerXRef.current = x;
+
+    if (pausedRef.current || finishedRef.current) return;
+    const { best, bd } = nearest(x);
+    if (best < 0) { cooldownRef.current = null; return; }
+    const headY = boardHRef.current - NAIL_BOTTOM - exposedFor(nailsRef.current[best].depth);
+    // clear cooldown if switched nail or lifted well above the head
+    if (cooldownRef.current !== null && cooldownRef.current !== best) cooldownRef.current = null;
+    if (y < headY - 48) cooldownRef.current = null;
+    // downward swing reaching the nail head, within contact range
+    if (bd <= level.goodR * 1.6 && dy > 1.5 && y >= headY - 16 && cooldownRef.current !== best) {
+      cooldownRef.current = best;
+      doStrike(best, bd);
+    }
   };
+
   const onPointerDown = (e) => {
     if (paused || finishedRef.current) return;
     e.preventDefault();
-    aimingRef.current = true;
     try { boardRef.current.setPointerCapture(e.pointerId); } catch {}
-    setHammerX(localX(e.clientX));
+    lastYRef.current = e.clientY - boardRef.current.getBoundingClientRect().top;
+    applyPointer(e.clientX, e.clientY);
   };
-  const onPointerMove = (e) => {
-    if (finishedRef.current) return;
-    setHammerX(localX(e.clientX));
-  };
-  const onPointerUp = (e) => {
-    if (!aimingRef.current) return;
-    aimingRef.current = false;
-    setHammerX(localX(e.clientX));
-    hammerXRef.current = localX(e.clientX);
-    doStrike();
-  };
+  const onPointerMove = (e) => { applyPointer(e.clientX, e.clientY); };
 
-  // keyboard (desktop)
+  // keyboard fallback (desktop)
   useEffect(() => {
     const onKey = (e) => {
-      if (e.code === 'Space') { e.preventDefault(); doStrike(); }
-      else if (e.code === 'ArrowLeft') setHammerX((x) => Math.max(24, x - 16));
-      else if (e.code === 'ArrowRight') setHammerX((x) => Math.min(boardW - 24, x + 16));
+      if (e.code === 'Space') { e.preventDefault(); const { best, bd } = nearest(hammerXRef.current); doStrike(best, bd); }
+      else if (e.code === 'ArrowLeft') setHammerX((x) => { const nx = Math.max(24, x - 18); hammerXRef.current = nx; return nx; });
+      else if (e.code === 'ArrowRight') setHammerX((x) => { const nx = Math.min(boardW - 24, x + 18); hammerXRef.current = nx; return nx; });
       else if (e.code === 'Escape') setPaused((p) => !p);
     };
     window.addEventListener('keydown', onKey);
@@ -234,18 +257,17 @@ export default function GameScreen({ t, level, onFinish, onMenu }) {
         ref={boardRef}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
         className={`relative flex-1 mt-1 ${shake ? 'shake' : ''}`}
-        style={{ touchAction: 'none', cursor: 'pointer' }}
+        style={{ touchAction: 'none', cursor: 'grab' }}
       >
         {feedback && (
           <div key={feedback.key} className="feedback-pop absolute z-20 text-center pointer-events-none"
-               style={{ left: feedback.x, bottom: 260, transform: 'translateX(-50%)' }}>
+               style={{ left: feedback.x, top: feedback.y, transform: 'translateX(-50%)' }}>
             <div className="font-display font-extrabold text-2xl drop-shadow" style={{ color: feedback.color }}>{feedback.text}</div>
             {feedback.combo && <div className="font-display font-extrabold text-base text-[#f0932e]">x{feedback.combo}</div>}
           </div>
         )}
-        <NailBoard nails={nails} nailXs={nailXs} hammerX={hammerX} swinging={swinging}
+        <NailBoard nails={nails} nailXs={nailXs} hammerX={hammerX} hammerY={hammerY} swinging={swinging}
                    hitFx={hitFx} targetIndex={highlight} plankH={PLANK_H} />
       </div>
 

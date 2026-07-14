@@ -5,7 +5,7 @@ import HammerSprite from './HammerSprite';
 // Renders sky area, nails on a light plank, a finger-following hammer + aim guide.
 // props: nails, nailXs (px), hammerX (px), swinging, hitFx {index,type},
 //        targetIndex, plankH, nailBaseBottom
-export default function NailBoard({ nails, nailXs, hammerX, swinging, hitFx, targetIndex, plankH = 90 }) {
+export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, hitFx, targetIndex, plankH = 90 }) {
   const maxExposed = 150;
   const nailBottom = plankH - 6;
   return (
@@ -51,13 +51,13 @@ export default function NailBoard({ nails, nailXs, hammerX, swinging, hitFx, tar
         );
       })}
 
-      {/* hammer follows finger */}
+      {/* hammer follows finger (2D) */}
       <div className="absolute pointer-events-none" style={{
-        left: hammerX, bottom: nailBottom + maxExposed - 20, transform: 'translateX(-50%)',
+        left: hammerX, top: hammerY, transform: 'translate(-50%,-64%)',
       }}>
         <div className={swinging ? 'hammer-strike' : ''}
-             style={{ transform: 'rotate(-38deg)', transformOrigin: '50% 88%' }}>
-          <HammerSprite size={70} />
+             style={{ transform: 'rotate(-28deg)', transformOrigin: '50% 92%' }}>
+          <HammerSprite size={72} />
         </div>
       </div>
 
