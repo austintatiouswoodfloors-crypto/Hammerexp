@@ -1,5 +1,5 @@
 import React from 'react';
-import { MAX_DEPTH, MAX_BEND } from '../mock';
+import { MAX_DEPTH } from '../mock';
 import HammerSprite from './HammerSprite';
 
 // Renders sky area, nails on a light plank, a finger-following hammer + aim guide.
@@ -20,7 +20,6 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
       {nails.map((nail, i) => {
         const progress = Math.min(nail.depth / MAX_DEPTH, 1);
         const exposed = Math.max(8, maxExposed * (1 - progress));
-        const tilt = nail.ruined ? 24 : nail.bent * 7;
         const isTarget = i === targetIndex && !nail.done;
         const ring = hitFx && hitFx.index === i;
         return (
@@ -34,7 +33,7 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
                   border: '3px solid #4aa3e0',
                 }} />
               )}
-              <div style={{ transform: `rotate(${tilt}deg)`, transformOrigin: 'bottom center', transition: 'transform 0.25s, height 0.18s' }}
+              <div style={{ transformOrigin: 'bottom center', transition: 'height 0.18s' }}
                    className="relative flex flex-col items-center">
                 <div className="nail-head-s rounded-full" style={{ width: 16, height: 6, zIndex: 2 }} />
                 <div className="nail-body-s" style={{ width: 6, height: exposed, marginTop: -2,

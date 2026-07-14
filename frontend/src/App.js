@@ -1,41 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import TitleScreen from './components/TitleScreen';
-import LevelSelect from './components/LevelSelect';
 import GameScreen from './components/GameScreen';
 import ResultScreen from './components/ResultScreen';
 import HowToModal from './components/HowToModal';
-import { STR, LEVELS, getHighScores, saveHighScore, getUnlocked, unlockLevel } from './mock';
+import { STR, GAME, getBest, saveBest } from './mock';
 import { SFX, setMuted } from './audio';
 
 export default function App() {
-  const [screen, setScreen] = useState('title'); // title | levels | game | result
+  const [screen, setScreen] = useState('title'); // title | game | result
   const [muted, setMutedState] = useState(false);
   const [howto, setHowto] = useState(false);
-  const [level, setLevel] = useState(LEVELS[0]);
-  const [unlocked, setUnlocked] = useState(getUnlocked());
   const [result, setResult] = useState(null);
 
   const t = STR;
 
   useEffect(() => { setMuted(muted); }, [muted]);
 
-  const startLevel = (lv) => { SFX.click(); setLevel(lv); setResult(null); setScreen('game'); };
+  const startGame = () => { SFX.click(); setResult(null); setScreen('game'); };
 
   const handleFinish = (r) => {
-    const isNew = saveHighScore(level.id, r.score);
-    if (r.win) { unlockLevel(level.id + 1); setUnlocked(getUnlocked()); }
-    setResult({ ...r, isNewRecord: isNew, best: getHighScores()[level.id] || r.score });
+    const isNew = saveBest(r.taps);
+    setResult({ ...r, isNewRecord: isNew, best: getBest() });
     setScreen('result');
   };
-
-  const nextLevel = () => {
-    const idx = LEVELS.findIndex((l) => l.id === level.id);
-    if (idx < LEVELS.length - 1) startLevel(LEVELS[idx + 1]);
-    else setScreen('levels');
-  };
-
-  const hasNext = LEVELS.findIndex((l) => l.id === level.id) < LEVELS.length - 1;
 
   return (
     <div className="App min-h-screen w-full flex items-center justify-center sm:p-4">
@@ -43,25 +31,19 @@ export default function App() {
         {screen === 'title' && (
           <TitleScreen t={t}
             muted={muted} onToggleMute={() => setMutedState((m) => !m)}
-            onStart={() => { SFX.click(); setScreen('levels'); }}
+            onStart={startGame}
             onHowTo={() => { SFX.click(); setHowto(true); }} />
         )}
 
-        {screen === 'levels' && (
-          <LevelSelect t={t} unlocked={unlocked}
-            onSelect={startLevel} onBack={() => { SFX.click(); setScreen('title'); }} />
-        )}
-
         {screen === 'game' && (
-          <GameScreen t={t} level={level} best={getHighScores()[level.id] || 0}
-            onFinish={handleFinish} onMenu={() => setScreen('levels')} />
+          <GameScreen t={t} game={GAME} onFinish={handleFinish}
+            onMenu={() => { SFX.click(); setScreen('title'); }} />
         )}
 
         {screen === 'result' && result && (
-          <ResultScreen t={t} win={result.win} stars={result.stars} score={result.score}
-            best={result.best} isNewRecord={result.isNewRecord} hasNext={hasNext}
-            onRetry={() => startLevel(level)} onNext={nextLevel}
-            onMenu={() => { SFX.click(); setScreen('levels'); }} />
+          <ResultScreen t={t} taps={result.taps} stars={result.stars}
+            best={result.best} isNewRecord={result.isNewRecord}
+            onRetry={startGame} onMenu={() => { SFX.click(); setScreen('title'); }} />
         )}
 
         <HowToModal open={howto} onClose={() => setHowto(false)} t={t} />
