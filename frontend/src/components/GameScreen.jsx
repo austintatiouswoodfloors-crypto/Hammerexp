@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from
 import NailBoard from './NailBoard';
 import { MAX_DEPTH, HIT_DEPTH } from '../mock';
 import { SFX } from '../audio';
-import { Home, Hammer } from 'lucide-react';
+import { Home, Hammer, Zap } from 'lucide-react';
 
 const PLANK_H = 92;
 const NAIL_BOTTOM = PLANK_H - 6; // matches NailBoard
@@ -25,6 +25,7 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
   const [hitFx, setHitFx] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [shake, setShake] = useState(false);
+  const [streak, setStreak] = useState(0);
 
   const boardRef = useRef(null);
   const finishedRef = useRef(false);
@@ -36,6 +37,7 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
   const nailXsRef = useRef([]);
   const boardHRef = useRef(600);
   const tapsRef = useRef(0);
+  const perfectStreakRef = useRef(0);
 
   useEffect(() => { hammerXRef.current = hammerX; }, [hammerX]);
   useEffect(() => { nailsRef.current = nails; }, [nails]);
@@ -46,8 +48,10 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
     finishedRef.current = false;
     cooldownRef.current = null;
     tapsRef.current = 0;
+    perfectStreakRef.current = 0;
     setNails(makeNails());
     setTaps(0);
+    setStreak(0);
   }, [game, makeNails]);
 
   // measure board
@@ -101,28 +105,37 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
     tapsRef.current += 1;
     setTaps(tapsRef.current);
 
+    // Determine hit quality (no MISS: every landed swing drives the nail).
     let tier, addDepth;
-    if (best < 0) { tier = 'miss'; addDepth = 0; }
-    else if (bd <= game.perfectR) { tier = 'perfect'; addDepth = HIT_DEPTH.perfect(); }
+    if (bd <= game.perfectR) { tier = 'perfect'; addDepth = HIT_DEPTH.perfect(); }
     else if (bd <= game.perfectR * 1.9) { tier = 'great'; addDepth = HIT_DEPTH.great(); }
-    else if (bd <= game.goodR) { tier = 'good'; addDepth = HIT_DEPTH.good(); }
-    else { tier = 'miss'; addDepth = 0; }
+    else { tier = 'good'; addDepth = HIT_DEPTH.good(); }
+
+    // Perfect streak powers up: each consecutive perfect drives deeper (fewer taps).
+    if (tier === 'perfect') perfectStreakRef.current += 1;
+    else perfectStreakRef.current = 0;
+    const streak = perfectStreakRef.current;
+    setStreak(streak);
+    if (tier === 'perfect') {
+      const mult = 1 + Math.min(streak - 1, 7) * 0.35; // 1x, 1.35x, 1.7x ... up to ~3.45x
+      addDepth *= mult;
+    }
 
     if (tier === 'perfect') SFX.hitPerfect();
     else if (tier === 'great') SFX.hitGood();
-    else if (tier === 'good') SFX.hitOk();
-    else { SFX.miss(); setShake(true); setTimeout(() => setShake(false), 280); }
+    else SFX.hitOk();
 
-    setHitFx({ index: best, type: tier === 'miss' ? 'miss' : 'hit' });
+    setHitFx({ index: best, type: 'hit' });
     setTimeout(() => setHitFx(null), 500);
 
     const list0 = nailsRef.current;
     const fy = best >= 0 && list0[best]
       ? boardHRef.current - NAIL_BOTTOM - exposedFor(list0[best].depth) - 30
       : boardHRef.current / 2;
-    const label = { perfect: t.perfect, great: t.great, good: t.good, miss: t.miss }[tier];
-    const color = { perfect: '#3fae6a', great: '#f0a92e', good: '#5a86a3', miss: '#e06a5a' }[tier];
-    setFeedback({ text: label, color, key: Date.now(), x: hammerXRef.current, y: fy });
+    const label = { perfect: t.perfect, great: t.great, good: t.good }[tier];
+    const color = { perfect: '#3fae6a', great: '#f0a92e', good: '#5a86a3' }[tier];
+    setFeedback({ text: label, color, key: Date.now(), x: hammerXRef.current, y: fy,
+                  streak: tier === 'perfect' && streak > 1 ? streak : null });
 
     setNails((prev) => {
       const list = prev.map((c) => ({ ...c }));
@@ -193,9 +206,14 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
         <div className="h-10 w-10" />
       </div>
 
-      {/* progress */}
-      <div className="flex items-center justify-center mt-2 px-4 h-7">
+      {/* progress + power streak */}
+      <div className="flex items-center justify-center gap-4 mt-2 px-4 h-7">
         <div className="text-[#4a7590] font-bold text-sm">{t.nails}: {done}/{n}</div>
+        {streak > 1 && (
+          <div className="flex items-center gap-1 text-[#3fae6a] font-display font-extrabold text-lg">
+            <Zap size={18} className="fill-[#7ee0a0] text-[#3fae6a]" /> PERFECT x{streak}
+          </div>
+        )}
       </div>
 
       {/* interactive board */}
@@ -210,6 +228,7 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
           <div key={feedback.key} className="feedback-pop absolute z-20 text-center pointer-events-none"
                style={{ left: feedback.x, top: feedback.y, transform: 'translateX(-50%)' }}>
             <div className="font-display font-extrabold text-2xl drop-shadow" style={{ color: feedback.color }}>{feedback.text}</div>
+            {feedback.streak && <div className="font-display font-extrabold text-base text-[#3fae6a]">POWER x{feedback.streak}</div>}
           </div>
         )}
         <NailBoard nails={nails} nailXs={nailXs} hammerX={hammerX} hammerY={hammerY} swinging={swinging}

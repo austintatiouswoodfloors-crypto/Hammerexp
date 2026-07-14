@@ -39,6 +39,7 @@ export const STR = {
     'Swing it straight DOWN onto a nail head to drive it in.',
     'Lift up and swing down again to keep hammering.',
     'Fewer taps is a better score — aim for dead-center hits!',
+    'Chain PERFECT hits in a row to power up and finish faster!',
     'Drive all 4 nails flush to finish.',
   ],
   close: 'GOT IT',
