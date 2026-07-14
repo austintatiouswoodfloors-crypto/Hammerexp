@@ -125,7 +125,7 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
     else if (tier === 'great') SFX.hitGood();
     else SFX.hitOk();
 
-    setHitFx({ index: best, type: 'hit' });
+    setHitFx({ index: best, type: 'hit', key: Date.now() });
     setTimeout(() => setHitFx(null), 500);
 
     const list0 = nailsRef.current;

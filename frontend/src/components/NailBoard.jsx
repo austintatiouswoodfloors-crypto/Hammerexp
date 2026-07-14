@@ -39,24 +39,19 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
                 <div className="nail-body-s" style={{ width: 6, height: exposed, marginTop: -2,
                                  clipPath: 'polygon(0 0,100% 0,58% 100%,42% 100%)' }} />
               </div>
-              {ring && (
-                <div className="absolute" style={{ left: '50%', top: 8 }}>
-                  <div className={`ring-burst rounded-full border-4 ${hitFx.type === 'miss' ? 'border-red-300' : 'border-sky-300'}`}
-                       style={{ width: 26, height: 26 }} />
-                </div>
-              )}
+              {ring && <Sparks key={hitFx.key} />}
             </div>
           </div>
         );
       })}
 
-      {/* hammer follows finger (2D) */}
+      {/* hammer follows finger (2D) — bigger & horizontal, head over the aim point */}
       <div className="absolute pointer-events-none" style={{
-        left: hammerX, top: hammerY, transform: 'translate(-50%,-64%)',
+        left: hammerX, top: hammerY, transform: 'translate(-76%,-84%)',
       }}>
         <div className={swinging ? 'hammer-strike' : ''}
-             style={{ transform: 'rotate(-28deg)', transformOrigin: '50% 92%' }}>
-          <HammerSprite size={72} />
+             style={{ transformOrigin: '80% 62%' }}>
+          <HammerSprite size={128} />
         </div>
       </div>
 
@@ -66,5 +61,38 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
              style={{ background: 'repeating-linear-gradient(90deg, rgba(150,110,60,0.15) 0 1px, transparent 1px 70px)' }} />
       </div>
     </>
+  );
+}
+
+// Firecracker-style spark burst emitted from a nail head on strike.
+function Sparks() {
+  const COLORS = ['#ffd54a', '#ff9f1a', '#ffffff', '#ffcf5e', '#ffb347'];
+  const parts = React.useMemo(() => Array.from({ length: 14 }, (_, i) => {
+    const a = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.5;
+    const d = 20 + Math.random() * 30;
+    return {
+      tx: Math.cos(a) * d,
+      ty: Math.sin(a) * d - 6, // bias upward like a spark shower
+      c: COLORS[i % COLORS.length],
+      s: 3 + Math.random() * 3,
+      delay: Math.random() * 0.04,
+    };
+  }), []);
+  return (
+    <div className="absolute" style={{ left: '50%', top: 6, transform: 'translate(-50%,-50%)', pointerEvents: 'none', zIndex: 5 }}>
+      {/* bright flash */}
+      <div className="ring-burst rounded-full absolute" style={{
+        left: '50%', top: '50%', width: 20, height: 20,
+        background: 'radial-gradient(circle, #fff 0%, #ffe08a 55%, transparent 70%)',
+      }} />
+      {parts.map((p, idx) => (
+        <span key={idx} className="spark absolute rounded-full" style={{
+          left: '50%', top: '50%', width: p.s, height: p.s, background: p.c,
+          boxShadow: `0 0 6px ${p.c}, 0 0 10px ${p.c}`,
+          animationDelay: `${p.delay}s`,
+          '--tx': `${p.tx}px`, '--ty': `${p.ty}px`,
+        }} />
+      ))}
+    </div>
   );
 }
