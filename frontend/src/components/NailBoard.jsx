@@ -5,21 +5,17 @@ import HammerSprite from './HammerSprite';
 // Renders sky area, nails on a light plank, a finger-following hammer + aim guide.
 // props: nails, nailXs (px), hammerX (px), swinging, hitFx {index,type},
 //        targetIndex, plankH, nailBaseBottom
-export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, hitFx, targetIndex, plankH = 90 }) {
-  const maxExposed = 150;
+export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, hitFx, targetIndex, plankH = 90, maxExposed = 200, hammerSize = 128 }) {
   const nailBottom = plankH - 6;
+  const bodyW = Math.max(12, Math.round(maxExposed * 0.075));
+  const headW = bodyW * 2.6;
+  const headH = Math.max(9, Math.round(bodyW * 0.9));
   return (
     <>
-      {/* aim guide line */}
-      <div className="absolute pointer-events-none" style={{
-        left: hammerX, bottom: nailBottom, top: 8, width: 2, transform: 'translateX(-1px)',
-        background: 'repeating-linear-gradient(180deg, rgba(74,163,224,0.55) 0 6px, transparent 6px 13px)',
-      }} />
-
       {/* nails */}
       {nails.map((nail, i) => {
         const progress = Math.min(nail.depth / MAX_DEPTH, 1);
-        const exposed = Math.max(8, maxExposed * (1 - progress));
+        const exposed = Math.max(10, maxExposed * (1 - progress));
         const isTarget = i === targetIndex && !nail.done;
         const ring = hitFx && hitFx.index === i;
         return (
@@ -29,14 +25,14 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
               {/* target highlight */}
               {isTarget && (
                 <div className="target-pulse absolute rounded-full" style={{
-                  left: '50%', top: 6, width: 30, height: 30,
+                  left: '50%', top: 4, width: headW + 22, height: headW + 22,
                   border: '3px solid #4aa3e0',
                 }} />
               )}
               <div style={{ transformOrigin: 'bottom center', transition: 'height 0.18s' }}
                    className="relative flex flex-col items-center">
-                <div className="nail-head-s rounded-full" style={{ width: 16, height: 6, zIndex: 2 }} />
-                <div className="nail-body-s" style={{ width: 6, height: exposed, marginTop: -2,
+                <div className="nail-head-s rounded-full" style={{ width: headW, height: headH, zIndex: 2 }} />
+                <div className="nail-body-s" style={{ width: bodyW, height: exposed, marginTop: -2,
                                  clipPath: 'polygon(0 0,100% 0,58% 100%,42% 100%)' }} />
               </div>
               {ring && <Sparks key={hitFx.key} />}
@@ -51,7 +47,7 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
       }}>
         <div className={swinging ? 'hammer-strike' : ''}
              style={{ transformOrigin: '80% 62%' }}>
-          <HammerSprite size={128} />
+          <HammerSprite size={hammerSize} />
         </div>
       </div>
 

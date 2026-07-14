@@ -6,9 +6,6 @@ import { Home, Hammer, Zap } from 'lucide-react';
 
 const PLANK_H = 92;
 const NAIL_BOTTOM = PLANK_H - 6; // matches NailBoard
-const MAX_EXPOSED = 150;
-
-const exposedFor = (depth) => Math.max(8, MAX_EXPOSED * (1 - depth / MAX_DEPTH));
 
 export default function GameScreen({ t, game, onFinish, onMenu }) {
   const makeNails = useCallback(() =>
@@ -38,6 +35,13 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
   const boardHRef = useRef(600);
   const tapsRef = useRef(0);
   const perfectStreakRef = useRef(0);
+  const maxExposedRef = useRef(200);
+
+  // nail length ~1/4 of the play area; hammer ~2/3 of board width (big).
+  const maxExposed = Math.max(180, Math.round(boardH * 0.30));
+  const hammerSize = Math.min(310, Math.max(200, Math.round(boardW * 0.66)));
+  useEffect(() => { maxExposedRef.current = maxExposed; }, [maxExposed]);
+  const exposedFor = useCallback((depth) => Math.max(12, maxExposedRef.current * (1 - depth / MAX_DEPTH)), []);
 
   useEffect(() => { hammerXRef.current = hammerX; }, [hammerX]);
   useEffect(() => { nailsRef.current = nails; }, [nails]);
@@ -193,22 +197,21 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
   const done = nails.filter((c) => c.done).length;
 
   return (
-    <div className="h-full sky-bg flex flex-col select-none overflow-hidden">
+    <div className="h-full bg-white flex flex-col select-none overflow-hidden">
       {/* HUD */}
       <div className="flex items-center justify-between px-4 pt-4 gap-2">
-        <button onClick={onMenu} className="h-10 w-10 rounded-full bg-white/85 shadow flex items-center justify-center text-[#4a7590] active:scale-95 transition-transform">
+        <button onClick={onMenu} className="h-10 w-10 rounded-full bg-[#eef2f6] shadow flex items-center justify-center text-[#4a7590] active:scale-95 transition-transform">
           <Home size={18} />
         </button>
-        <div className="bg-white/90 rounded-xl px-5 py-1 shadow text-center min-w-[110px]">
+        <div className="bg-[#f4f7fa] rounded-xl px-5 py-1 shadow text-center min-w-[110px]">
           <div className="text-[10px] font-bold text-[#7c9aad] leading-none flex items-center justify-center gap-1"><Hammer size={11} />{t.taps}</div>
           <div className="font-display font-extrabold text-2xl text-[#37546a] leading-tight">{taps}</div>
         </div>
         <div className="h-10 w-10" />
       </div>
 
-      {/* progress + power streak */}
-      <div className="flex items-center justify-center gap-4 mt-2 px-4 h-7">
-        <div className="text-[#4a7590] font-bold text-sm">{t.nails}: {done}/{n}</div>
+      {/* power streak */}
+      <div className="flex items-center justify-center mt-2 px-4 h-7">
         {streak > 1 && (
           <div className="flex items-center gap-1 text-[#3fae6a] font-display font-extrabold text-lg">
             <Zap size={18} className="fill-[#7ee0a0] text-[#3fae6a]" /> PERFECT x{streak}
@@ -227,12 +230,13 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
         {feedback && (
           <div key={feedback.key} className="feedback-pop absolute z-20 text-center pointer-events-none"
                style={{ left: feedback.x, top: feedback.y, transform: 'translateX(-50%)' }}>
-            <div className="font-display font-extrabold text-2xl drop-shadow" style={{ color: feedback.color }}>{feedback.text}</div>
-            {feedback.streak && <div className="font-display font-extrabold text-base text-[#3fae6a]">POWER x{feedback.streak}</div>}
+            <div className="font-display font-extrabold text-3xl drop-shadow" style={{ color: feedback.color }}>{feedback.text}</div>
+            {feedback.streak && <div className="font-display font-extrabold text-lg text-[#3fae6a]">POWER x{feedback.streak}</div>}
           </div>
         )}
         <NailBoard nails={nails} nailXs={nailXs} hammerX={hammerX} hammerY={hammerY} swinging={swinging}
-                   hitFx={hitFx} targetIndex={highlight} plankH={PLANK_H} />
+                   hitFx={hitFx} targetIndex={highlight} plankH={PLANK_H}
+                   maxExposed={maxExposed} hammerSize={hammerSize} />
       </div>
 
       {/* hint */}
