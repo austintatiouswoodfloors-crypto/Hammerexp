@@ -3,13 +3,13 @@
 
 export const MAX_DEPTH = 100; // depth needed to drive a nail flush (many taps)
 
-// Depth gained per strike (with slight randomness so totals vary):
-//  perfect ~19 taps/nail  -> best run ~70-80 total (4 nails)
-//  good    ~35 taps/nail  -> sloppy run ~120-180 total
+// Fixed, structured depth gained per strike (out of 100):
+//  perfect 5  -> 20 taps/nail  -> best run ~80 (fewer with perfect streak)
+//  good    2.5 -> 40 taps/nail -> sloppy run ~160
 export const HIT_DEPTH = {
-  perfect: () => 4.8 + Math.random() * 1.0,
-  great: () => 3.4 + Math.random() * 0.9,
-  good: () => 2.3 + Math.random() * 0.9,
+  perfect: () => 5,
+  great: () => 3.5,
+  good: () => 2.5,
 };
 
 // Single stage config.

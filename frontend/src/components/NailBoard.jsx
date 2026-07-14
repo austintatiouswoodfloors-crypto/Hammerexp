@@ -16,20 +16,12 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
       {nails.map((nail, i) => {
         const progress = Math.min(nail.depth / MAX_DEPTH, 1);
         const exposed = Math.max(10, maxExposed * (1 - progress));
-        const isTarget = i === targetIndex && !nail.done;
         const ring = hitFx && hitFx.index === i;
         return (
           <div key={nail.id} className="absolute flex flex-col items-center pointer-events-none"
                style={{ left: nailXs[i], bottom: nailBottom, transform: 'translateX(-50%)' }}>
             <div style={{ height: maxExposed, display: 'flex', alignItems: 'flex-end', position: 'relative' }}>
-              {/* target highlight */}
-              {isTarget && (
-                <div className="target-pulse absolute rounded-full" style={{
-                  left: '50%', top: 4, width: headW + 22, height: headW + 22,
-                  border: '3px solid #4aa3e0',
-                }} />
-              )}
-              <div style={{ transformOrigin: 'bottom center', transition: 'height 0.18s' }}
+              <div style={{ transformOrigin: 'bottom center', transition: 'height 0.12s linear' }}
                    className="relative flex flex-col items-center">
                 <div className="nail-head-s rounded-full" style={{ width: headW, height: headH, zIndex: 2 }} />
                 <div className="nail-body-s" style={{ width: bodyW, height: exposed, marginTop: -2,

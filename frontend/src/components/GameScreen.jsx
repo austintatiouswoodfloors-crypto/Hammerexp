@@ -214,7 +214,7 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
       <div className="flex items-center justify-center mt-2 px-4 h-7">
         {streak > 1 && (
           <div className="flex items-center gap-1 text-[#3fae6a] font-display font-extrabold text-lg">
-            <Zap size={18} className="fill-[#7ee0a0] text-[#3fae6a]" /> PERFECT x{streak}
+            <Zap size={18} className="fill-[#7ee0a0] text-[#3fae6a]" /> COMBO x{streak}
           </div>
         )}
       </div>
@@ -227,13 +227,6 @@ export default function GameScreen({ t, game, onFinish, onMenu }) {
         className={`relative flex-1 mt-1 ${shake ? 'shake' : ''}`}
         style={{ touchAction: 'none', cursor: 'grab' }}
       >
-        {feedback && (
-          <div key={feedback.key} className="feedback-pop absolute z-20 text-center pointer-events-none"
-               style={{ left: feedback.x, top: feedback.y, transform: 'translateX(-50%)' }}>
-            <div className="font-display font-extrabold text-3xl drop-shadow" style={{ color: feedback.color }}>{feedback.text}</div>
-            {feedback.streak && <div className="font-display font-extrabold text-lg text-[#3fae6a]">POWER x{feedback.streak}</div>}
-          </div>
-        )}
         <NailBoard nails={nails} nailXs={nailXs} hammerX={hammerX} hammerY={hammerY} swinging={swinging}
                    hitFx={hitFx} targetIndex={highlight} plankH={PLANK_H}
                    maxExposed={maxExposed} hammerSize={hammerSize} />
