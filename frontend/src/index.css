@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,17 +6,16 @@
 
 body {
     margin: 0;
-    font-family: 'M PLUS Rounded 1c', 'Baloo 2', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
     user-select: none;
     -webkit-user-select: none;
+    background: #b9c6d6;
 }
 
-code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-}
+code { font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace; }
 
 @layer base {
   :root {
@@ -44,10 +43,6 @@ code {
 }
 
 @layer base {
-  * {
-    @apply border-border;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
 }

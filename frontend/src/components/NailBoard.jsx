@@ -1,89 +1,71 @@
 import React from 'react';
 import { MAX_DEPTH, MAX_BEND } from '../mock';
+import HammerSprite from './HammerSprite';
 
-// Renders the wooden plank with nails and the swinging hammer above the active nail.
-// props: nails [{depth,bent,done,ruined}], activeIndex, swinging, hitFx
-export default function NailBoard({ nails, activeIndex, swinging, hitFx }) {
-  const n = nails.length;
+// Renders sky area, nails on a light plank, a finger-following hammer + aim guide.
+// props: nails, nailXs (px), hammerX (px), swinging, hitFx {index,type},
+//        targetIndex, plankH, nailBaseBottom
+export default function NailBoard({ nails, nailXs, hammerX, swinging, hitFx, targetIndex, plankH = 90 }) {
+  const maxExposed = 150;
+  const nailBottom = plankH - 6;
   return (
-    <div className="relative w-full max-w-2xl mx-auto" style={{ height: 320 }}>
-      {/* Nails row (above plank) */}
-      <div className="absolute left-0 right-0" style={{ bottom: 96 }}>
-        <div className="flex items-end justify-center gap-3 sm:gap-6 px-4">
-          {nails.map((nail, i) => {
-            const progress = Math.min(nail.depth / MAX_DEPTH, 1);
-            const maxExposed = 150;
-            const exposed = Math.max(10, maxExposed * (1 - progress));
-            const isActive = i === activeIndex && !nail.done;
-            const tilt = nail.ruined ? 26 : nail.bent * 7;
-            return (
-              <div key={nail.id} className="relative flex flex-col items-center"
-                   style={{ width: 30 }}>
-                {/* active indicator */}
-                {isActive && (
-                  <div className="absolute -top-9 pulse-arrow text-[#c23b2c]">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 21l-8-9h5V3h6v9h5z" />
-                    </svg>
-                  </div>
-                )}
-                {/* nail */}
-                <div className="relative" style={{ height: maxExposed, display: 'flex', alignItems: 'flex-end' }}>
-                  <div style={{ transform: `rotate(${tilt}deg)`, transformOrigin: 'bottom center', transition: 'transform 0.25s, height 0.18s' }}
-                       className="relative flex flex-col items-center">
-                    {/* head */}
-                    <div className="nail-head rounded-full" style={{ width: 20, height: 8, zIndex: 2 }} />
-                    {/* body */}
-                    <div className="nail-body" style={{ width: 8, height: exposed, marginTop: -2,
-                                     clipPath: 'polygon(0 0,100% 0,60% 100%,40% 100%)' }} />
-                  </div>
-                  {/* hit ring fx */}
-                  {isActive && hitFx && (
-                    <div className="absolute left-1/2 -translate-x-1/2" style={{ top: -6 }}>
-                      <div className={`ring-burst rounded-full border-4 ${hitFx === 'miss' ? 'border-red-400' : 'border-yellow-200'}`}
-                           style={{ width: 30, height: 30 }} />
-                    </div>
-                  )}
-                </div>
+    <>
+      {/* aim guide line */}
+      <div className="absolute pointer-events-none" style={{
+        left: hammerX, bottom: nailBottom, top: 8, width: 2, transform: 'translateX(-1px)',
+        background: 'repeating-linear-gradient(180deg, rgba(74,163,224,0.55) 0 6px, transparent 6px 13px)',
+      }} />
+
+      {/* nails */}
+      {nails.map((nail, i) => {
+        const progress = Math.min(nail.depth / MAX_DEPTH, 1);
+        const exposed = Math.max(8, maxExposed * (1 - progress));
+        const tilt = nail.ruined ? 24 : nail.bent * 7;
+        const isTarget = i === targetIndex && !nail.done;
+        const ring = hitFx && hitFx.index === i;
+        return (
+          <div key={nail.id} className="absolute flex flex-col items-center pointer-events-none"
+               style={{ left: nailXs[i], bottom: nailBottom, transform: 'translateX(-50%)' }}>
+            <div style={{ height: maxExposed, display: 'flex', alignItems: 'flex-end', position: 'relative' }}>
+              {/* target highlight */}
+              {isTarget && (
+                <div className="target-pulse absolute rounded-full" style={{
+                  left: '50%', top: 6, width: 30, height: 30,
+                  border: '3px solid #4aa3e0',
+                }} />
+              )}
+              <div style={{ transform: `rotate(${tilt}deg)`, transformOrigin: 'bottom center', transition: 'transform 0.25s, height 0.18s' }}
+                   className="relative flex flex-col items-center">
+                <div className="nail-head-s rounded-full" style={{ width: 16, height: 6, zIndex: 2 }} />
+                <div className="nail-body-s" style={{ width: 6, height: exposed, marginTop: -2,
+                                 clipPath: 'polygon(0 0,100% 0,58% 100%,42% 100%)' }} />
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Hammer above active nail */}
-      {activeIndex >= 0 && nails[activeIndex] && !nails[activeIndex].done && (
-        <div className="absolute" style={{
-          bottom: 200,
-          left: `calc(50% + ${(activeIndex - (n - 1) / 2) * (n > 6 ? 44 : 54)}px)`,
-          transform: 'translateX(-50%)',
-        }}>
-          <div className={swinging ? 'hammer-swing' : ''} style={{ transform: 'rotate(-42deg)', transformOrigin: '80% 90%' }}>
-            <Hammer />
+              {ring && (
+                <div className="absolute" style={{ left: '50%', top: 8 }}>
+                  <div className={`ring-burst rounded-full border-4 ${hitFx.type === 'miss' ? 'border-red-300' : 'border-sky-300'}`}
+                       style={{ width: 26, height: 26 }} />
+                </div>
+              )}
+            </div>
           </div>
+        );
+      })}
+
+      {/* hammer follows finger */}
+      <div className="absolute pointer-events-none" style={{
+        left: hammerX, bottom: nailBottom + maxExposed - 20, transform: 'translateX(-50%)',
+      }}>
+        <div className={swinging ? 'hammer-strike' : ''}
+             style={{ transform: 'rotate(-38deg)', transformOrigin: '50% 88%' }}>
+          <HammerSprite size={70} />
         </div>
-      )}
-
-      {/* Wooden plank */}
-      <div className="absolute left-0 right-0 bottom-0 mx-auto plank rounded-xl"
-           style={{ height: 96, maxWidth: 620 }}>
-        <div className="w-full h-full rounded-xl opacity-40"
-             style={{ background: 'repeating-linear-gradient(90deg, rgba(60,32,10,0.25) 0 1px, transparent 1px 60px)' }} />
       </div>
-    </div>
-  );
-}
 
-function Hammer() {
-  return (
-    <svg width="64" height="64" viewBox="0 0 64 64" style={{ filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.3))' }}>
-      {/* handle */}
-      <rect x="30" y="24" width="7" height="36" rx="3.5" fill="#b5762f" />
-      <rect x="31.5" y="24" width="2" height="36" fill="#d69648" />
-      {/* head */}
-      <rect x="12" y="12" width="40" height="18" rx="4" fill="#5b6169" />
-      <rect x="12" y="12" width="40" height="6" rx="3" fill="#7d848d" />
-      <rect x="44" y="10" width="12" height="22" rx="4" fill="#464b52" />
-    </svg>
+      {/* light plank */}
+      <div className="absolute left-0 right-0 bottom-0 plank-light" style={{ height: plankH }}>
+        <div className="w-full h-full opacity-30"
+             style={{ background: 'repeating-linear-gradient(90deg, rgba(150,110,60,0.15) 0 1px, transparent 1px 70px)' }} />
+      </div>
+    </>
   );
 }
