@@ -1,10 +1,12 @@
 import React from 'react';
 import { Star, RotateCcw, Home, Trophy, Hammer } from 'lucide-react';
+import NightSky from './NightSky';
 
-export default function ResultScreen({ t, taps, stars, best, isNewRecord, onRetry, onMenu }) {
+export default function ResultScreen({ t, night, taps, stars, best, isNewRecord, onRetry, onMenu }) {
   return (
-    <div className="h-full sky-bg flex items-center justify-center px-6">
-      <div className="w-full bg-white rounded-3xl shadow-2xl border-[3px] border-[#cfe8f8] p-7 text-center">
+    <div className={`h-full flex items-center justify-center px-6 relative overflow-hidden ${night ? 'night-bg' : 'sky-bg'}`}>
+      {night && <NightSky />}
+      <div className="w-full bg-white rounded-3xl shadow-2xl border-[3px] border-[#cfe8f8] p-7 text-center relative z-[1]">
         <h2 className="font-display font-extrabold text-3xl mb-1 text-[#3fae6a]">{t.clear}</h2>
 
         <div className="flex justify-center gap-2 my-5">

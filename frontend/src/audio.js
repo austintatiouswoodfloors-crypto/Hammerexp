@@ -57,4 +57,6 @@ export const SFX = {
     [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.18, 'triangle', 0.12, i * 0.09));
   },
   fail() { tone(300, 0.25, 'sawtooth', 0.1, 0, 120); tone(220, 0.3, 'sawtooth', 0.08, 0.08, 90); },
+  tap() { noiseThock(0.34); tone(280, 0.05, 'square', 0.06); },
+  twinkle() { [1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.13, 'sine', 0.09, i * 0.05)); },
 };
