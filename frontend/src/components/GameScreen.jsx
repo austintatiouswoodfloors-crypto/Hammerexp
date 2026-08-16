@@ -9,10 +9,11 @@ const PLANK_H = 92;
 const NAIL_BOTTOM = PLANK_H - 6; // matches NailBoard
 
 // speed (px/ms downward) -> depth per strike. slow = shallow, fast = deep.
+// Tuned so a nail (depth 100) takes ~20 taps (fast) to ~30 taps (slow).
 function depthFromSpeed(vy) {
   const s = Math.max(vy, 0);
   const norm = Math.min(Math.max((s - 0.12) / (2.0 - 0.12), 0), 1);
-  return 2 + norm * (8.5 - 2); // 2 (slow) .. 8.5 (fast)
+  return 3.35 + norm * (5.0 - 3.35); // slow ~3.35 (~30 taps) .. fast ~5.0 (~20 taps)
 }
 
 export default function GameScreen({ t, game, night, onFinish, onMenu }) {
@@ -91,8 +92,8 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
     finishedRef.current = true;
     const total = tapsRef.current;
     let stars = 1;
-    if (total <= game.nails * 15) stars = 3;
-    else if (total <= game.nails * 26) stars = 2;
+    if (total <= game.nails * 22) stars = 3;
+    else if (total <= game.nails * 27) stars = 2;
     SFX.clear();
     setTimeout(() => onFinish({ taps: total, stars }), 700);
   }, [game, onFinish]);
