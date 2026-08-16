@@ -99,10 +99,10 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
 
   // resolve a strike on nail `best` with downward speed `vy`
   const doStrike = useCallback((best, vy) => {
-    if (finishedRef.current || swingingRef.current || best < 0) return;
+    if (finishedRef.current || best < 0) return;
     swingingRef.current = true;
     setSwinging(true);
-    setTimeout(() => { swingingRef.current = false; setSwinging(false); }, 240);
+    setTimeout(() => { swingingRef.current = false; setSwinging(false); }, 180);
 
     tapsRef.current += 1;
     setTaps(tapsRef.current);
@@ -128,6 +128,7 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
         nail.depth = Math.min(MAX_DEPTH, nail.depth + addDepth);
         if (nail.depth >= MAX_DEPTH) nail.done = true;
       }
+      nailsRef.current = list; // sync immediately so rapid taps use fresh depth
       if (list.every((c) => c.done)) setTimeout(finish, 300);
       return list;
     });
@@ -150,13 +151,20 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
 
     if (finishedRef.current) return;
     const { best, bd } = nearest(x);
-    if (best < 0) { cooldownRef.current = null; return; }
+    // not over a nail -> release contact so the next touch can count
+    if (best < 0 || bd > game.goodR * 1.6) { cooldownRef.current = null; return; }
     const headY = boardHRef.current - NAIL_BOTTOM - exposedFor(nailsRef.current[best].depth);
+    // switched to a different nail -> reset contact
     if (cooldownRef.current !== null && cooldownRef.current !== best) cooldownRef.current = null;
-    if (y < headY - 48) cooldownRef.current = null;
-    if (bd <= game.goodR * 1.5 && dy > 1.5 && y >= headY - 16 && cooldownRef.current !== best) {
-      cooldownRef.current = best;
-      doStrike(best, vy);
+    // edge-trigger: the moment the hammer head reaches the nail head, count ONE tap.
+    if (y >= headY - 8) {
+      if (cooldownRef.current !== best) {
+        cooldownRef.current = best; // mark this contact as counted
+        doStrike(best, vy);
+      }
+    } else if (y < headY - 26) {
+      // lifted clear of the head -> ready for the next tap
+      if (cooldownRef.current === best) cooldownRef.current = null;
     }
   };
 

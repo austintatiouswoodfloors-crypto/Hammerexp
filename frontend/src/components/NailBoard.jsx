@@ -35,7 +35,7 @@ export default function NailBoard({ nails, nailXs, hammerX, hammerY, swinging, h
 
       {/* hammer tracks touch 1:1 — striking face sits exactly on the touch point */}
       <div className="absolute pointer-events-none" style={{
-        left: hammerX, top: hammerY, transform: 'translate(-75.7%,-90%)',
+        left: hammerX, top: hammerY, transform: 'translate(-84%,-80%)',
       }}>
         <div className={swinging ? 'hammer-strike' : ''}
              style={{ transformOrigin: '80% 62%' }}>
