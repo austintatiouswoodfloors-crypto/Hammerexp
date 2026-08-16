@@ -41,10 +41,6 @@ export default function HammerSprite({ size = 130 }) {
       <ellipse cx="135" cy="79" rx="9" ry="5" fill="#fff" opacity="0.3" />
       {/* head highlight */}
       <rect x="125" y="22" width="7" height="34" rx="3.5" fill="#fff" opacity="0.42" />
-
-      {/* claw curving up and to the right */}
-      <path d="M138 18 C 149 1, 168 -1, 173 12 C 165 7, 157 9, 152 16 C 148 12, 143 12, 138 18 Z"
-            fill="url(#steelDark)" stroke="#8b98a8" strokeWidth="0.6" />
     </svg>
   );
 }
