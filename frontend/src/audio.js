@@ -1,6 +1,7 @@
 // Lightweight Web Audio SFX engine (no external assets needed)
 let ctx = null;
 let muted = false;
+let forcePlay = false; // when true, sounds play even if muted (used for win alert)
 
 function ac() {
   if (typeof window === 'undefined') return null;
@@ -17,7 +18,7 @@ export function isMuted() { return muted; }
 
 function tone(freq, dur, type = 'sine', gain = 0.15, startAt = 0, slideTo = null) {
   const c = ac();
-  if (!c || muted) return;
+  if (!c || (muted && !forcePlay)) return;
   const t0 = c.currentTime + startAt;
   const osc = c.createOscillator();
   const g = c.createGain();
@@ -33,7 +34,7 @@ function tone(freq, dur, type = 'sine', gain = 0.15, startAt = 0, slideTo = null
 
 function noiseThock(gain = 0.25) {
   const c = ac();
-  if (!c || muted) return;
+  if (!c || (muted && !forcePlay)) return;
   const len = Math.floor(c.sampleRate * 0.08);
   const buf = c.createBuffer(1, len, c.sampleRate);
   const data = buf.getChannelData(0);
@@ -59,4 +60,11 @@ export const SFX = {
   fail() { tone(300, 0.25, 'sawtooth', 0.1, 0, 120); tone(220, 0.3, 'sawtooth', 0.08, 0.08, 90); },
   tap() { noiseThock(0.34); tone(280, 0.05, 'square', 0.06); },
   twinkle() { [1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.13, 'sine', 0.09, i * 0.05)); },
+  // Victory fanfare that plays even when the game is muted.
+  win() {
+    const prev = forcePlay; forcePlay = true;
+    [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.2, 'triangle', 0.14, i * 0.1));
+    [1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.16, 'sine', 0.11, 0.45 + i * 0.06));
+    forcePlay = prev;
+  },
 };

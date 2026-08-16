@@ -30,6 +30,7 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
   const [swinging, setSwinging] = useState(false);
   const [hitFx, setHitFx] = useState(null);
   const [doneFx, setDoneFx] = useState(null);
+  const [cleared, setCleared] = useState(false);
 
   const boardRef = useRef(null);
   const finishedRef = useRef(false);
@@ -60,6 +61,7 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
     setNails(makeNails());
     setTaps(0);
     setDoneFx(null);
+    setCleared(false);
   }, [game, makeNails]);
 
   useLayoutEffect(() => {
@@ -94,7 +96,7 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
     let stars = 1;
     if (total <= game.nails * 22) stars = 3;
     else if (total <= game.nails * 27) stars = 2;
-    SFX.clear();
+    SFX.win(); // plays even if muted, to alert the player of the win
     setTimeout(() => onFinish({ taps: total, stars }), 700);
   }, [game, onFinish]);
 
@@ -130,7 +132,10 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
         if (nail.depth >= MAX_DEPTH) nail.done = true;
       }
       nailsRef.current = list; // sync immediately so rapid taps use fresh depth
-      if (list.every((c) => c.done)) setTimeout(finish, 300);
+      if (list.every((c) => c.done)) {
+        setTimeout(() => setCleared(true), 0); // full-board win twinkle (visible even when muted)
+        setTimeout(finish, 450);
+      }
       return list;
     });
   }, [finish]);
@@ -221,10 +226,49 @@ export default function GameScreen({ t, game, night, onFinish, onMenu }) {
         <NailBoard nails={nails} nailXs={nailXs} hammerX={hammerX} hammerY={hammerY} swinging={swinging}
                    hitFx={hitFx} doneFx={doneFx} plankH={PLANK_H}
                    maxExposed={maxExposed} hammerSize={hammerSize} night={night} />
+        {cleared && <ClearBurst t={t} />}
       </div>
 
       {/* hint */}
       <div className={`text-center text-xs font-semibold pb-5 pt-1 z-[2] ${night ? 'text-slate-300' : 'text-[#5a86a3]'}`}>{t.tapToHit}</div>
+    </div>
+  );
+}
+
+// Full-board win twinkle — visual celebration that plays even when muted.
+function ClearBurst({ t }) {
+  const stars = React.useMemo(() => Array.from({ length: 28 }, () => ({
+    left: 4 + Math.random() * 92,
+    top: 6 + Math.random() * 82,
+    size: 12 + Math.random() * 20,
+    delay: Math.random() * 0.55,
+    dur: 0.55 + Math.random() * 0.5,
+    color: Math.random() > 0.5 ? '#ffd35a' : '#fff2b0',
+  })), []);
+  return (
+    <div className="absolute inset-0 pointer-events-none z-[10] overflow-hidden">
+      {/* soft golden flash */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(circle at 50% 45%, rgba(255,224,138,0.4), rgba(255,224,138,0) 62%)',
+        animation: 'star-twinkle 0.9s ease-out',
+      }} />
+      {/* CLEAR! banner */}
+      <div className="absolute left-1/2 top-[30%] -translate-x-1/2 star-pop">
+        <div className="font-display font-extrabold text-4xl" style={{ color: '#f0a92e', textShadow: '0 2px 0 #fff, 0 0 14px rgba(255,211,90,0.8)' }}>
+          {t.clear}
+        </div>
+      </div>
+      {/* twinkling stars across the board */}
+      {stars.map((s, i) => (
+        <span key={i} className="absolute" style={{
+          left: `${s.left}%`, top: `${s.top}%`, color: s.color,
+          animation: `star-pop ${s.dur}s ease-out ${s.delay}s both, star-twinkle 0.9s ease-in-out ${s.delay + 0.3}s infinite`,
+        }}>
+          <svg width={s.size} height={s.size} viewBox="0 0 24 24" fill="currentColor" style={{ filter: 'drop-shadow(0 0 5px #ffe08a)' }}>
+            <path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z" />
+          </svg>
+        </span>
+      ))}
     </div>
   );
 }
